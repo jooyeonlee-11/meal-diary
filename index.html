@@ -181,6 +181,40 @@
         white-space: pre-wrap;
       }
 
+      .record-actions {
+        margin-top: 12px;
+        display: flex;
+        gap: 8px;
+      }
+
+      .small-btn {
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink);
+        border-radius: 10px;
+        padding: 7px 10px;
+        font-size: 0.84rem;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .small-btn.warn {
+        border-color: #efc7bd;
+        background: #fff4f1;
+        color: #8a3f34;
+      }
+
+      .edit-form {
+        margin-top: 12px;
+        display: grid;
+        gap: 8px;
+      }
+
+      .edit-actions {
+        display: flex;
+        gap: 8px;
+      }
+
       .empty {
         background: #fffdfa;
         border: 1px dashed var(--line);
@@ -469,6 +503,7 @@
       const weekdayNames = ["일", "월", "화", "수", "목", "금", "토"];
       const viewDate = new Date();
       const STORAGE_KEY = "single_meal_records_v1";
+      let editingIndex = null;
 
       function getDateKey(date) {
         const y = date.getFullYear();
@@ -534,20 +569,50 @@
 
         recordList.innerHTML = records
           .map(
-            (record) => `
+            (record, index) => `
             <article class="record-card">
               <div class="record-top">
                 <h3 class="meal-name">${record.meal}</h3>
                 <span class="date">${record.createdAt}</span>
               </div>
-              <div class="tags">
-                <span class="tag">${record.company}</span>
-                <span class="tag">기분: ${record.mood}</span>
-              </div>
               ${
-                record.memo
-                  ? `<p class="memo">${record.memo}</p>`
-                  : '<p class="memo">메모 없음</p>'
+                editingIndex === index
+                  ? `
+                <div class="edit-form">
+                  <input type="text" data-edit-field="meal" value="${record.meal}" />
+                  <select data-edit-field="company">
+                    <option value="혼자 먹었어요" ${record.company === "혼자 먹었어요" ? "selected" : ""}>혼자 먹었어요</option>
+                    <option value="같이 먹었어요" ${record.company === "같이 먹었어요" ? "selected" : ""}>같이 먹었어요</option>
+                  </select>
+                  <select data-edit-field="mood">
+                    <option value="든든하고 편안함" ${record.mood === "든든하고 편안함" ? "selected" : ""}>든든하고 편안함</option>
+                    <option value="무난하고 잔잔함" ${record.mood === "무난하고 잔잔함" ? "selected" : ""}>무난하고 잔잔함</option>
+                    <option value="기분 좋고 만족스러움" ${record.mood === "기분 좋고 만족스러움" ? "selected" : ""}>기분 좋고 만족스러움</option>
+                    <option value="조금 아쉬움" ${record.mood === "조금 아쉬움" ? "selected" : ""}>조금 아쉬움</option>
+                    <option value="피곤하고 지침" ${record.mood === "피곤하고 지침" ? "selected" : ""}>피곤하고 지침</option>
+                  </select>
+                  <textarea data-edit-field="memo" placeholder="메모를 입력하세요">${record.memo}</textarea>
+                  <div class="edit-actions">
+                    <button class="small-btn" data-action="save-edit" data-index="${index}">저장</button>
+                    <button class="small-btn warn" data-action="cancel-edit">취소</button>
+                  </div>
+                </div>
+                `
+                  : `
+                <div class="tags">
+                  <span class="tag">${record.company}</span>
+                  <span class="tag">기분: ${record.mood}</span>
+                </div>
+                ${
+                  record.memo
+                    ? `<p class="memo">${record.memo}</p>`
+                    : '<p class="memo">메모 없음</p>'
+                }
+                <div class="record-actions">
+                  <button class="small-btn" data-action="edit" data-index="${index}">수정</button>
+                  <button class="small-btn warn" data-action="delete" data-index="${index}">삭제</button>
+                </div>
+                `
               }
             </article>
           `
@@ -658,6 +723,50 @@
         renderCalendar();
         mealForm.reset();
         mealInput.focus();
+      });
+
+      recordList.addEventListener("click", (event) => {
+        const target = event.target.closest("button[data-action]");
+        if (!target) return;
+
+        const action = target.dataset.action;
+        const index = Number(target.dataset.index);
+
+        if (action === "edit") {
+          editingIndex = index;
+          renderRecords();
+          return;
+        }
+
+        if (action === "cancel-edit") {
+          editingIndex = null;
+          renderRecords();
+          return;
+        }
+
+        if (action === "delete") {
+          records.splice(index, 1);
+          editingIndex = null;
+          saveRecords();
+          renderRecords();
+          renderCalendar();
+          return;
+        }
+
+        if (action === "save-edit") {
+          const card = target.closest(".record-card");
+          const meal = card.querySelector('[data-edit-field="meal"]').value.trim();
+          const company = card.querySelector('[data-edit-field="company"]').value;
+          const mood = card.querySelector('[data-edit-field="mood"]').value;
+          const memo = card.querySelector('[data-edit-field="memo"]').value.trim();
+          if (!meal) return;
+
+          records[index] = { ...records[index], meal, company, mood, memo };
+          editingIndex = null;
+          saveRecords();
+          renderRecords();
+          renderCalendar();
+        }
       });
 
       tabButtons.forEach((button) => {
