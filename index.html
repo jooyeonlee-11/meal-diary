@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>1인 식사 기록 앱</title>
+    <style>
+      :root {
+        --bg: #fff7ef;
+        --paper: #fffdf9;
+        --ink: #3f2f28;
+        --muted: #7b6659;
+        --primary: #c8744e;
+        --primary-deep: #af623f;
+        --line: #ecd8ca;
+        --tag: #f9e5d9;
+        --tab-bg: #fff4ea;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        font-family: "Pretendard", "Noto Sans KR", -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        color: var(--ink);
+        background: radial-gradient(circle at top left, #ffe8d9, #fff8f1 45%),
+          linear-gradient(to bottom, #fffaf6, #fff4eb);
+      }
+
+      .app {
+        max-width: 920px;
+        margin: 28px auto 0;
+        padding: 0 18px 110px;
+      }
+
+      .panel {
+        background: rgba(255, 253, 249, 0.86);
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        padding: 24px;
+        box-shadow: 0 12px 28px rgba(84, 53, 36, 0.08);
+        backdrop-filter: blur(2px);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 1.8rem;
+      }
+
+      .subtitle {
+        margin: 10px 0 0;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .form-grid {
+        display: grid;
+        gap: 14px;
+        margin-top: 20px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 6px;
+        color: var(--muted);
+        font-size: 0.93rem;
+      }
+
+      input,
+      select,
+      textarea {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 12px 13px;
+        font-size: 1rem;
+        color: var(--ink);
+        background: #fff;
+      }
+
+      textarea {
+        min-height: 86px;
+        resize: vertical;
+      }
+
+      input:focus,
+      select:focus,
+      textarea:focus {
+        outline: 2px solid #f5d7c7;
+        border-color: var(--primary);
+      }
+
+      .actions {
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      .btn {
+        border: 0;
+        border-radius: 12px;
+        padding: 12px 18px;
+        font-size: 0.98rem;
+        font-weight: 700;
+        color: #fff;
+        background: var(--primary);
+        cursor: pointer;
+        transition: background-color 0.2s ease, transform 0.1s ease;
+      }
+
+      .btn:hover {
+        background: var(--primary-deep);
+      }
+
+      .btn:active {
+        transform: translateY(1px);
+      }
+
+      .section-title {
+        margin: 24px 0 10px;
+        font-size: 1.2rem;
+      }
+
+      .record-list {
+        display: grid;
+        gap: 12px;
+        margin-top: 10px;
+      }
+
+      .record-card {
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 16px;
+        box-shadow: 0 5px 14px rgba(84, 53, 36, 0.06);
+      }
+
+      .record-top {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .meal-name {
+        margin: 0;
+        font-size: 1.1rem;
+      }
+
+      .date {
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+
+      .tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .tag {
+        display: inline-block;
+        background: var(--tag);
+        border: 1px solid #efcfbc;
+        color: #6a4331;
+        border-radius: 999px;
+        padding: 5px 10px;
+        font-size: 0.83rem;
+        font-weight: 700;
+      }
+
+      .memo {
+        margin: 12px 0 0;
+        color: var(--ink);
+        line-height: 1.5;
+        white-space: pre-wrap;
+      }
+
+      .empty {
+        background: #fffdfa;
+        border: 1px dashed var(--line);
+        border-radius: 14px;
+        color: var(--muted);
+        padding: 16px;
+      }
+
+      .pages {
+        margin-top: 12px;
+      }
+
+      .page {
+        display: none;
+      }
+
+      .page.active {
+        display: block;
+      }
+
+      .calendar-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 18px;
+      }
+
+      .month-title {
+        margin: 0;
+        font-size: 1.15rem;
+      }
+
+      .cal-nav {
+        display: flex;
+        gap: 8px;
+      }
+
+      .cal-nav button {
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink);
+        border-radius: 10px;
+        padding: 7px 11px;
+        cursor: pointer;
+      }
+
+      .weekdays,
+      .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .weekdays {
+        margin-top: 14px;
+      }
+
+      .weekday {
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.86rem;
+      }
+
+      .calendar-grid {
+        margin-top: 8px;
+      }
+
+      .day-cell {
+        min-height: 88px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #fff;
+        padding: 8px;
+      }
+
+      .day-cell.muted {
+        opacity: 0.42;
+      }
+
+      .day-num {
+        font-size: 0.9rem;
+      }
+
+      .dot-wrap {
+        margin-top: 7px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+
+      .meal-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--primary);
+      }
+
+      .day-summary {
+        margin-top: 4px;
+        font-size: 0.78rem;
+        color: var(--muted);
+      }
+
+      .bottom-tabs {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+        background: linear-gradient(to top, #fff4ea, rgba(255, 244, 234, 0.78));
+      }
+
+      .tab-inner {
+        max-width: 920px;
+        margin: 0 auto;
+        background: var(--tab-bg);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        padding: 6px;
+        box-shadow: 0 8px 18px rgba(84, 53, 36, 0.12);
+      }
+
+      .tab-btn {
+        border: 0;
+        border-radius: 12px;
+        background: transparent;
+        color: var(--muted);
+        font-size: 0.96rem;
+        font-weight: 700;
+        padding: 11px 10px;
+        cursor: pointer;
+      }
+
+      .tab-btn.active {
+        background: #fff;
+        color: var(--ink);
+        box-shadow: inset 0 0 0 1px var(--line);
+      }
+
+      @media (max-width: 640px) {
+        .app {
+          margin-top: 18px;
+          padding-bottom: 106px;
+        }
+
+        .panel {
+          padding: 20px;
+          border-radius: 18px;
+        }
+
+        .day-cell {
+          min-height: 72px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <div class="pages">
+        <section id="recordPage" class="page active">
+          <section class="panel">
+            <h1>1인 식사 기록 앱</h1>
+            <p class="subtitle">
+              오늘 뭐 먹었는지, 혼자 먹었는지/같이 먹었는지, 기분이 어땠는지
+              기록해보세요.
+            </p>
+
+            <form id="mealForm" class="form-grid">
+              <div>
+                <label for="mealInput">오늘 먹은 음식</label>
+                <input
+                  id="mealInput"
+                  type="text"
+                  placeholder="예: 김치볶음밥, 샌드위치, 국밥"
+                  required
+                />
+              </div>
+
+              <div>
+                <label for="companyInput">식사 형태</label>
+                <select id="companyInput" required>
+                  <option value="">선택하세요</option>
+                  <option value="혼자 먹었어요">혼자 먹었어요</option>
+                  <option value="같이 먹었어요">같이 먹었어요</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="moodInput">오늘의 기분</label>
+                <select id="moodInput" required>
+                  <option value="">선택하세요</option>
+                  <option value="든든하고 편안함">든든하고 편안함</option>
+                  <option value="무난하고 잔잔함">무난하고 잔잔함</option>
+                  <option value="기분 좋고 만족스러움">기분 좋고 만족스러움</option>
+                  <option value="조금 아쉬움">조금 아쉬움</option>
+                  <option value="피곤하고 지침">피곤하고 지침</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="memoInput">메모 (선택)</label>
+                <textarea
+                  id="memoInput"
+                  placeholder="식사하면서 느낀 점을 적어보세요."
+                ></textarea>
+              </div>
+
+              <div class="actions">
+                <button class="btn" type="submit">기록 저장</button>
+              </div>
+            </form>
+          </section>
+
+          <h2 class="section-title">기록 리스트</h2>
+          <section id="recordList" class="record-list">
+            <div class="empty">아직 기록이 없어요. 첫 식사를 남겨보세요.</div>
+          </section>
+        </section>
+
+        <section id="calendarPage" class="page">
+          <section class="panel">
+            <h1>달력 보기</h1>
+            <p class="subtitle">
+              날짜별로 식사 기록을 확인해보세요. 점이 있는 날짜는 기록이 있는
+              날이에요.
+            </p>
+
+            <div class="calendar-head">
+              <h2 id="monthTitle" class="month-title"></h2>
+              <div class="cal-nav">
+                <button type="button" id="prevMonthBtn">이전</button>
+                <button type="button" id="nextMonthBtn">다음</button>
+              </div>
+            </div>
+
+            <div class="weekdays" id="weekdays"></div>
+            <div class="calendar-grid" id="calendarGrid"></div>
+          </section>
+        </section>
+      </div>
+    </main>
+
+    <nav class="bottom-tabs">
+      <div class="tab-inner">
+        <button class="tab-btn active" data-tab="record">기록</button>
+        <button class="tab-btn" data-tab="calendar">달력</button>
+      </div>
+    </nav>
+
+    <script>
+      const mealForm = document.getElementById("mealForm");
+      const mealInput = document.getElementById("mealInput");
+      const companyInput = document.getElementById("companyInput");
+      const moodInput = document.getElementById("moodInput");
+      const memoInput = document.getElementById("memoInput");
+      const recordList = document.getElementById("recordList");
+      const tabButtons = document.querySelectorAll(".tab-btn");
+      const recordPage = document.getElementById("recordPage");
+      const calendarPage = document.getElementById("calendarPage");
+      const monthTitle = document.getElementById("monthTitle");
+      const weekdays = document.getElementById("weekdays");
+      const calendarGrid = document.getElementById("calendarGrid");
+      const prevMonthBtn = document.getElementById("prevMonthBtn");
+      const nextMonthBtn = document.getElementById("nextMonthBtn");
+
+      const records = [];
+      const weekdayNames = ["일", "월", "화", "수", "목", "금", "토"];
+      const viewDate = new Date();
+      const STORAGE_KEY = "single_meal_records_v1";
+
+      function getDateKey(date) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, "0");
+        const d = String(date.getDate()).padStart(2, "0");
+        return `${y}-${m}-${d}`;
+      }
+
+      function formatDate(date) {
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, "0");
+        const dd = String(date.getDate()).padStart(2, "0");
+        const hh = String(date.getHours()).padStart(2, "0");
+        const min = String(date.getMinutes()).padStart(2, "0");
+        return `${yyyy}.${mm}.${dd} ${hh}:${min}`;
+      }
+
+      function switchTab(tab) {
+        const isRecord = tab === "record";
+        recordPage.classList.toggle("active", isRecord);
+        calendarPage.classList.toggle("active", !isRecord);
+        tabButtons.forEach((button) => {
+          button.classList.toggle("active", button.dataset.tab === tab);
+        });
+      }
+
+      function saveRecords() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+      }
+
+      function loadRecords() {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+
+        try {
+          const parsed = JSON.parse(raw);
+          if (!Array.isArray(parsed)) return;
+
+          parsed.forEach((item) => {
+            if (
+              item &&
+              typeof item.meal === "string" &&
+              typeof item.company === "string" &&
+              typeof item.mood === "string" &&
+              typeof item.memo === "string" &&
+              typeof item.createdAt === "string" &&
+              typeof item.dateKey === "string"
+            ) {
+              records.push(item);
+            }
+          });
+        } catch (error) {
+          console.error("저장된 기록을 불러오지 못했습니다.", error);
+        }
+      }
+
+      function renderRecords() {
+        if (records.length === 0) {
+          recordList.innerHTML =
+            '<div class="empty">아직 기록이 없어요. 첫 식사를 남겨보세요.</div>';
+          return;
+        }
+
+        recordList.innerHTML = records
+          .map(
+            (record) => `
+            <article class="record-card">
+              <div class="record-top">
+                <h3 class="meal-name">${record.meal}</h3>
+                <span class="date">${record.createdAt}</span>
+              </div>
+              <div class="tags">
+                <span class="tag">${record.company}</span>
+                <span class="tag">기분: ${record.mood}</span>
+              </div>
+              ${
+                record.memo
+                  ? `<p class="memo">${record.memo}</p>`
+                  : '<p class="memo">메모 없음</p>'
+              }
+            </article>
+          `
+          )
+          .join("");
+      }
+
+      function renderWeekdays() {
+        weekdays.innerHTML = weekdayNames
+          .map((day) => `<div class="weekday">${day}</div>`)
+          .join("");
+      }
+
+      function countRecordsByDate() {
+        const countMap = {};
+        records.forEach((record) => {
+          countMap[record.dateKey] = (countMap[record.dateKey] || 0) + 1;
+        });
+        return countMap;
+      }
+
+      function renderCalendar() {
+        const year = viewDate.getFullYear();
+        const month = viewDate.getMonth();
+        const firstDay = new Date(year, month, 1);
+        const firstWeekday = firstDay.getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const prevMonthDays = new Date(year, month, 0).getDate();
+        const recordCountMap = countRecordsByDate();
+
+        monthTitle.textContent = `${year}년 ${month + 1}월`;
+        calendarGrid.innerHTML = "";
+
+        for (let i = 0; i < firstWeekday; i += 1) {
+          const day = prevMonthDays - firstWeekday + i + 1;
+          calendarGrid.innerHTML += `
+            <div class="day-cell muted">
+              <div class="day-num">${day}</div>
+            </div>
+          `;
+        }
+
+        for (let day = 1; day <= daysInMonth; day += 1) {
+          const currentDate = new Date(year, month, day);
+          const dateKey = getDateKey(currentDate);
+          const count = recordCountMap[dateKey] || 0;
+          const dots = Array.from({ length: Math.min(count, 3) })
+            .map(() => '<span class="meal-dot"></span>')
+            .join("");
+
+          calendarGrid.innerHTML += `
+            <div class="day-cell">
+              <div class="day-num">${day}</div>
+              ${count > 0 ? `<div class="dot-wrap">${dots}</div>` : ""}
+              ${count > 0 ? `<div class="day-summary">${count}개 기록</div>` : ""}
+            </div>
+          `;
+        }
+
+        const usedCells = firstWeekday + daysInMonth;
+        const remain = usedCells % 7 === 0 ? 0 : 7 - (usedCells % 7);
+
+        for (let i = 1; i <= remain; i += 1) {
+          calendarGrid.innerHTML += `
+            <div class="day-cell muted">
+              <div class="day-num">${i}</div>
+            </div>
+          `;
+        }
+      }
+
+      mealForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        const meal = mealInput.value.trim();
+        const company = companyInput.value;
+        const mood = moodInput.value;
+        const memo = memoInput.value.trim();
+
+        if (!meal || !company || !mood) return;
+
+        records.unshift({
+          meal,
+          company,
+          mood,
+          memo,
+          createdAt: formatDate(new Date()),
+          dateKey: getDateKey(new Date())
+        });
+
+        saveRecords();
+        renderRecords();
+        renderCalendar();
+        mealForm.reset();
+        mealInput.focus();
+      });
+
+      tabButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          switchTab(button.dataset.tab);
+        });
+      });
+
+      prevMonthBtn.addEventListener("click", () => {
+        viewDate.setMonth(viewDate.getMonth() - 1);
+        renderCalendar();
+      });
+
+      nextMonthBtn.addEventListener("click", () => {
+        viewDate.setMonth(viewDate.getMonth() + 1);
+        renderCalendar();
+      });
+
+      loadRecords();
+      renderWeekdays();
+      renderRecords();
+      renderCalendar();
+    </script>
+  </body>
+</html>
