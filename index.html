@@ -249,11 +249,12 @@
       }
 
       .day-cell {
-        min-height: 88px;
+        min-height: 112px;
         border: 1px solid var(--line);
         border-radius: 12px;
         background: #fff;
         padding: 8px;
+        overflow: hidden;
       }
 
       .day-cell.muted {
@@ -282,6 +283,22 @@
         margin-top: 4px;
         font-size: 0.78rem;
         color: var(--muted);
+      }
+
+      .day-records {
+        margin-top: 6px;
+        display: grid;
+        gap: 4px;
+      }
+
+      .day-record-item {
+        background: #fff5ee;
+        border: 1px solid #f1d9cb;
+        color: #64473a;
+        border-radius: 8px;
+        padding: 3px 6px;
+        font-size: 0.73rem;
+        line-height: 1.25;
       }
 
       .bottom-tabs {
@@ -334,7 +351,7 @@
         }
 
         .day-cell {
-          min-height: 72px;
+          min-height: 96px;
         }
       }
     </style>
@@ -544,12 +561,13 @@
           .join("");
       }
 
-      function countRecordsByDate() {
-        const countMap = {};
+      function getRecordsByDate() {
+        const grouped = {};
         records.forEach((record) => {
-          countMap[record.dateKey] = (countMap[record.dateKey] || 0) + 1;
+          if (!grouped[record.dateKey]) grouped[record.dateKey] = [];
+          grouped[record.dateKey].push(record);
         });
-        return countMap;
+        return grouped;
       }
 
       function renderCalendar() {
@@ -559,7 +577,7 @@
         const firstWeekday = firstDay.getDay();
         const daysInMonth = new Date(year, month + 1, 0).getDate();
         const prevMonthDays = new Date(year, month, 0).getDate();
-        const recordCountMap = countRecordsByDate();
+        const recordsByDate = getRecordsByDate();
 
         monthTitle.textContent = `${year}년 ${month + 1}월`;
         calendarGrid.innerHTML = "";
@@ -576,16 +594,30 @@
         for (let day = 1; day <= daysInMonth; day += 1) {
           const currentDate = new Date(year, month, day);
           const dateKey = getDateKey(currentDate);
-          const count = recordCountMap[dateKey] || 0;
+          const dayRecords = recordsByDate[dateKey] || [];
+          const count = dayRecords.length;
           const dots = Array.from({ length: Math.min(count, 3) })
             .map(() => '<span class="meal-dot"></span>')
             .join("");
+          const previewRecords = dayRecords
+            .slice(0, 2)
+            .map(
+              (record) => `
+                <div class="day-record-item">
+                  ${record.meal} · ${record.company === "혼자 먹었어요" ? "혼자" : "같이"} · ${record.mood}
+                </div>
+              `
+            )
+            .join("");
+          const restCount = count > 2 ? `<div class="day-summary">+${count - 2}개 더</div>` : "";
 
           calendarGrid.innerHTML += `
             <div class="day-cell">
               <div class="day-num">${day}</div>
               ${count > 0 ? `<div class="dot-wrap">${dots}</div>` : ""}
               ${count > 0 ? `<div class="day-summary">${count}개 기록</div>` : ""}
+              ${count > 0 ? `<div class="day-records">${previewRecords}</div>` : ""}
+              ${count > 0 ? restCount : ""}
             </div>
           `;
         }
